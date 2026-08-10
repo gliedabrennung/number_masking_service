@@ -1,10 +1,3 @@
-# Generator of the Russian voice prompts.
-#
-# Kept apart from the Asterisk image on purpose: the prompts are generated
-# once and committed to the repository, so the runtime image only copies
-# ready WAV files and carries no TTS stack at all.
-#
-# Build and run through `make sounds`.
 FROM python:3.12-slim-bookworm
 
 ARG VOICE=ru_RU-dmitri-medium

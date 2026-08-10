@@ -1,10 +1,3 @@
-# Asterisk 22 LTS built from source.
-#
-# Why from source: Debian ships Asterisk 20, and 20 LTS leaves full support in
-# October 2026. A new project starts on the 22 LTS branch (4 years of full
-# support + 1 year of security fixes).
-#
-# The build takes 10-20 minutes on first run and is cached afterwards.
 FROM debian:bookworm-slim AS build
 
 ARG ASTERISK_VERSION=22-current
@@ -50,13 +43,9 @@ RUN ./configure --with-jansson-bundled --with-pjproject-bundled --disable-xmldoc
     && make install \
     && make install-logrotate
 
-# Stage the same installation into /staging so the runtime image can copy the
-# complete set of artefacts — binary, modules, bundled pjproject libraries,
-# sounds — instead of an enumerated list that is easy to get wrong.
 RUN make install DESTDIR=/staging \
     && rm -rf /staging/var/run   # /var/run is a symlink to /run in the base image
 
-# --- runtime ---------------------------------------------------------------
 FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -79,9 +68,6 @@ COPY conf/ /etc/asterisk/static/
 COPY templates/ /etc/asterisk/templates/
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# The prompts are generated once by `make sounds` and committed; this image
-# carries no TTS stack. A missing prompt must break the build rather than
-# reach a subscriber as silence.
 COPY sounds/ru/custom/ /var/lib/asterisk/sounds/ru/custom/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && for prompt in session-expired number-unavailable enter-code \

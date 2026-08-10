@@ -16,9 +16,7 @@ build/
 htmlcov/
 coverage.xml
 
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/shelf/
+.idea/
 
 # Rendered Asterisk configuration and recorded media must never be committed.
 asterisk/conf/pjsip.conf

@@ -1,14 +1,3 @@
-# Demo stand.
-#
-# NETWORK MODEL — read before running:
-#   `asterisk` and `masking-app` run with network_mode: host. Publishing the RTP
-#   range through Docker's bridge NAT is impractical (mapping hundreds of UDP
-#   ports is slow and flaky), and the ARI socket must stay on loopback.
-#   Consequence: THIS STACK REQUIRES A LINUX HOST OR A LINUX VM. Docker Desktop
-#   on macOS/Windows has no usable host networking and RTP will not pass.
-#
-#   PostgreSQL and Redis stay on a bridge network and publish to 127.0.0.1 only.
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -90,7 +79,6 @@ services:
       timeout: 5s
       retries: 3
 
-  # Optional TLS terminator for the REST API: `docker compose --profile tls up`.
   caddy:
     image: caddy:2-alpine
     profiles: ["tls"]

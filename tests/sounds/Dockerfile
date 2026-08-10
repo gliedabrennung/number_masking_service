@@ -1,8 +1,3 @@
-# Offline check that the voice prompts are actually intelligible.
-#
-# Runs a small Russian speech recogniser (Vosk) over the committed prompts and
-# prints what it heard, so a regenerated prompt can be compared with its text
-# without anyone having to listen.
 FROM python:3.12-slim-bookworm
 
 ARG MODEL_URL=https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip

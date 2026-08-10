@@ -27,8 +27,22 @@ host-networking — сигнализация поднимется, а звук �
 
 ## Установка за 10 минут
 
+Что нужно на хосте:
+
+| Требование | Проверка |
+|---|---|
+| Linux (см. раздел выше) | `uname -s` → `Linux` |
+| Docker Engine 24+ | `docker --version` |
+| Docker Compose v2 (плагин `docker compose`) | `docker compose version` |
+| GNU make | `make --version` |
+| ~8 ГБ свободного места под образы | `df -h /var/lib/docker` |
+
+Пользователь должен иметь право работать с Docker: либо состоять в группе
+`docker`, либо запускать команды через `sudo`.
+
 ```bash
-git clone <repo> && cd number_masking_service
+git clone https://github.com/gliedabrennung/number_masking_service.git
+cd number_masking_service
 
 make secrets      # создаёт .env со сгенерированными паролями и ключами
 make demo         # сборка, запуск, миграции, 3 демо-номера, вывод SIP-настроек
@@ -37,14 +51,19 @@ make demo         # сборка, запуск, миграции, 3 демо-н�
 `make demo` печатает готовые строки подключения для софтфонов и пример `curl`
 для создания сессии. Первая сборка занимает 10–20 минут: Asterisk 22
 компилируется из исходников (в репозиториях Debian только версия 20, у которой
-полная поддержка заканчивается 19.10.2026).
+полная поддержка заканчивается 19.10.2026). Повторные запуски — секунды.
 
 Проверка:
 
 ```bash
 curl -s http://127.0.0.1:8000/health
-open http://127.0.0.1:8000/api/v1/docs      # Swagger UI
+xdg-open http://127.0.0.1:8000/api/v1/docs      # Swagger UI
 ```
+
+API-ключ для запросов печатает `make secrets`; он же лежит в `.env`
+в переменной `API_KEYS`.
+
+Остановить стенд — `make down`, снести вместе с данными — `make clean`.
 
 ### Настройка софтфонов
 
