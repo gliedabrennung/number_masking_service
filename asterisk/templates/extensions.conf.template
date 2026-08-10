@@ -1,0 +1,33 @@
+;
+; The entire dialplan. There is deliberately no business logic here: every
+; routing decision is taken by the ARI application from database state. That is
+; what makes the move to a real SIP trunk a configuration change rather than a
+; rewrite.
+;
+
+[general]
+static=yes
+writeprotect=yes
+
+[globals]
+
+; Calls arriving from registered subscribers (prototype).
+[masking-in]
+exten => _[+0-9].,1,NoOp(Call to proxy ${EXTEN} from ${CALLERID(num)})
+ same => n,Set(CHANNEL(language)=ru)
+ same => n,Stasis(${ARI_APP},inbound,${CALLERID(num)},${EXTEN})
+ same => n,Hangup()
+
+exten => i,1,Hangup()
+exten => h,1,NoOp(Hangup ${HANGUPCAUSE})
+
+; Calls arriving from an operator trunk (production). Identical handover into
+; Stasis: switching transports changes the endpoint, not the logic.
+[from-trunk]
+exten => _[+0-9].,1,NoOp(Trunk call to ${EXTEN} from ${CALLERID(num)})
+ same => n,Set(CHANNEL(language)=ru)
+ same => n,Stasis(${ARI_APP},inbound,${CALLERID(num)},${EXTEN})
+ same => n,Hangup()
+
+exten => i,1,Hangup()
+exten => h,1,NoOp(Hangup ${HANGUPCAUSE})

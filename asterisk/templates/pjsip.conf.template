@@ -1,0 +1,92 @@
+;
+; PJSIP configuration for the masking prototype.
+; chan_sip does not exist any more (removed in Asterisk 21) — chan_pjsip only.
+; Rendered from this template by docker-entrypoint.sh (envsubst).
+;
+
+[transport-udp]
+type=transport
+protocol=udp
+bind=0.0.0.0:5060
+; Behind NAT / on a public host, uncomment and set the public address:
+; external_media_address=${ASTERISK_EXTERNAL_IP}
+; external_signaling_address=${ASTERISK_EXTERNAL_IP}
+; local_net=192.168.0.0/16
+; local_net=10.0.0.0/8
+
+; ---------------------------------------------------------------------------
+; Global privacy defaults. Endpoints inherit them via (endpoint-defaults).
+; ---------------------------------------------------------------------------
+[endpoint-defaults](!)
+type=endpoint
+context=masking-in
+disallow=all
+allow=opus,alaw,ulaw
+; RTP always relayed by Asterisk. This is a privacy requirement, not just a NAT
+; workaround: with direct media the two subscribers would learn each other's IP.
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+; Never leak an asserted identity outwards.
+trust_id_inbound=no
+trust_id_outbound=no
+send_pai=no
+send_rpid=no
+send_diversion=no
+send_connected_line=no
+dtmf_mode=rfc4733
+language=ru
+; No `callerid` on the endpoints on purpose: the outbound leg's caller id is
+; set per call by the ARI originate (always the proxy number), and an endpoint
+; level value would compete with it. The inbound caller id comes from the
+; softphone's From user, which equals the account name.
+
+[aor-defaults](!)
+type=aor
+max_contacts=1
+remove_existing=yes
+qualify_frequency=30
+
+; ---------------------------------------------------------------------------
+; Demo subscriber A. The endpoint is named after its own number, which is what
+; ENDPOINT_TEMPLATE=PJSIP/{digits} expects. With a real operator trunk this
+; whole block is replaced by one trunk endpoint.
+; ---------------------------------------------------------------------------
+[${SIP_A_USER}](endpoint-defaults)
+auth=${SIP_A_USER}
+aors=${SIP_A_USER}
+
+[${SIP_A_USER}]
+type=auth
+auth_type=userpass
+username=${SIP_A_USER}
+password=${SIP_A_PASSWORD}
+
+[${SIP_A_USER}](aor-defaults)
+
+; --- Demo subscriber B -----------------------------------------------------
+[${SIP_B_USER}](endpoint-defaults)
+auth=${SIP_B_USER}
+aors=${SIP_B_USER}
+
+[${SIP_B_USER}]
+type=auth
+auth_type=userpass
+username=${SIP_B_USER}
+password=${SIP_B_PASSWORD}
+
+[${SIP_B_USER}](aor-defaults)
+
+; --- Demo subscriber C (third party for the extension-code scenario) -------
+[${SIP_C_USER}](endpoint-defaults)
+auth=${SIP_C_USER}
+aors=${SIP_C_USER}
+
+[${SIP_C_USER}]
+type=auth
+auth_type=userpass
+username=${SIP_C_USER}
+password=${SIP_C_PASSWORD}
+
+[${SIP_C_USER}](aor-defaults)

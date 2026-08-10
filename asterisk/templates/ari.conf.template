@@ -1,0 +1,10 @@
+[general]
+enabled=yes
+pretty=no
+; Origins are irrelevant here (no browser clients), keep the default deny.
+
+[${ARI_USER}]
+type=user
+read_only=no
+password=${ARI_PASSWORD}
+password_format=plain

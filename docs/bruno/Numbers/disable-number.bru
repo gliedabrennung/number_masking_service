@@ -1,0 +1,17 @@
+meta {
+  name: Disable number
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/numbers/+77172000101
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "status": "disabled"
+  }
+}

@@ -1,0 +1,25 @@
+# TLS termination for the REST API.
+# Replace the site address with a real hostname to get an automatic certificate;
+# as written it serves a self-signed certificate on :8443 for the demo stand.
+
+{
+	admin off
+}
+
+:8443 {
+	tls internal
+
+	# The ARI port (8088) is deliberately not proxied — it stays on loopback.
+	reverse_proxy 127.0.0.1:8000 {
+		header_up X-Trace-Id {http.request.header.X-Trace-Id}
+	}
+
+	request_body {
+		max_size 8KB
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

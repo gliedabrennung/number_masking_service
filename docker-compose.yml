@@ -1,0 +1,107 @@
+# Demo stand.
+#
+# NETWORK MODEL — read before running:
+#   `asterisk` and `masking-app` run with network_mode: host. Publishing the RTP
+#   range through Docker's bridge NAT is impractical (mapping hundreds of UDP
+#   ports is slow and flaky), and the ARI socket must stay on loopback.
+#   Consequence: THIS STACK REQUIRES A LINUX HOST OR A LINUX VM. Docker Desktop
+#   on macOS/Windows has no usable host networking and RTP will not pass.
+#
+#   PostgreSQL and Redis stay on a bridge network and publish to 127.0.0.1 only.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-masking}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-masking}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-masking}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrations:
+    build: .
+    network_mode: host
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  asterisk:
+    build:
+      context: ./asterisk
+      args:
+        ASTERISK_VERSION: ${ASTERISK_VERSION:-22-current}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      ARI_APP: ${ARI_APP:-masking}
+      ARI_USER: ${ARI_USER:-masking}
+      ARI_PASSWORD: ${ARI_PASSWORD:?ARI_PASSWORD is required}
+      ARI_BIND_ADDR: 127.0.0.1
+      SIP_A_USER: ${SIP_A_USER:-77011234567}
+      SIP_A_PASSWORD: ${SIP_A_PASSWORD:?SIP_A_PASSWORD is required}
+      SIP_B_USER: ${SIP_B_USER:-77019876543}
+      SIP_B_PASSWORD: ${SIP_B_PASSWORD:?SIP_B_PASSWORD is required}
+      SIP_C_USER: ${SIP_C_USER:-77015550022}
+      SIP_C_PASSWORD: ${SIP_C_PASSWORD:-${SIP_B_PASSWORD}}
+      ASTERISK_EXTERNAL_IP: ${ASTERISK_EXTERNAL_IP:-}
+    volumes:
+      - asterisk-log:/var/log/asterisk
+      - asterisk-spool:/var/spool/asterisk
+
+  masking-app:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # Optional TLS terminator for the REST API: `docker compose --profile tls up`.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["tls"]
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+
+volumes:
+  pgdata:
+  asterisk-log:
+  asterisk-spool:
+  caddy-data:

@@ -1,0 +1,13 @@
+;
+; ARI/HTTP is bound to the loopback interface only. It must never be reachable
+; from outside the host: an ARI user can originate calls and read every channel.
+;
+[general]
+enabled=yes
+bindaddr=${ARI_BIND_ADDR}
+bindport=8088
+prefix=
+enablestatic=no
+sessionlimit=100
+session_inactivity=30000
+session_keep_alive=15000

@@ -1,0 +1,17 @@
+meta {
+  name: Extend session TTL
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/sessions/{{sessionId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "ttl_seconds": 7200
+  }
+}

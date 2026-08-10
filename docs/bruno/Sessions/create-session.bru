@@ -1,0 +1,33 @@
+meta {
+  name: Create session
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/sessions
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "party_a": "{{partyA}}",
+    "party_b": "{{partyB}}",
+    "ttl_seconds": 3600,
+    "external_id": "order-4821",
+    "max_calls": null
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("sessionId", res.getBody().session_id);
+  }
+}
+
+docs {
+  201 -> proxy_number, extension_code (null, если номер выдан эксклюзивно).
+  409 no_number_available -> пул исчерпан.
+  422 -> невалидный E.164 или A == Б.
+}

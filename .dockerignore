@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+.idea
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+tests
+docs/openapi.json
+.env

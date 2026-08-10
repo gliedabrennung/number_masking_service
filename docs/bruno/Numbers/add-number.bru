@@ -1,0 +1,18 @@
+meta {
+  name: Add number
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/numbers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "e164": "+77172000101",
+    "provider": "demo"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "number-masking",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}
