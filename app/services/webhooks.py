@@ -83,18 +83,22 @@ async def _deliver(
                     settings.webhook_url, content=body, headers=headers
                 )
                 if response.status_code < _HTTP_ERROR_THRESHOLD:
-                    log.info("webhook.delivered", event=event, attempt=attempt)
+                    log.info(
+                        "webhook.delivered",
+                        webhook_event=event,
+                        attempt=attempt,
+                    )
                     return
                 log.warning(
                     "webhook.rejected",
-                    event=event,
+                    webhook_event=event,
                     attempt=attempt,
                     status_code=response.status_code,
                 )
             except Exception as exc:
                 log.warning(
                     "webhook.failed",
-                    event=event,
+                    webhook_event=event,
                     attempt=attempt,
                     error=str(exc),
                 )
@@ -106,6 +110,6 @@ async def _deliver(
 
     log.error(
         "webhook.giving_up",
-        event=event,
+        webhook_event=event,
         attempts=settings.webhook_max_attempts,
     )
