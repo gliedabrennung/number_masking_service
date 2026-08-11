@@ -17,6 +17,7 @@ Typical usage example:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator
 from typing import Any
@@ -74,6 +75,7 @@ class ARIClient:
             base_url=self._base,
         )
         self.connected = False
+        self._socket: Any = None
 
     async def aclose(self) -> None:
         """Closes the underlying HTTP connection pool."""
@@ -283,6 +285,33 @@ class ARIClient:
             return False
         return True
 
+    async def application_registered(self, app: str) -> bool:
+        """Returns True while Asterisk still knows the Stasis application.
+
+        Asterisk tears an application down when the websocket that registered
+        it goes away — including the case where a second, short-lived consumer
+        took it over and then left. The socket of the original consumer stays
+        open and silent, so this is the only way to notice.
+
+        Raises:
+            ARIError: The interface could not be reached at all.
+        """
+        try:
+            await self._request("GET", f"/applications/{app}")
+        except ARIError as ari_error:
+            if ari_error.status_code == _HTTP_NOT_FOUND:
+                return False
+            raise
+        return True
+
+    async def force_reconnect(self) -> None:
+        """Drops the event websocket so :meth:`events` opens a fresh one."""
+        socket = self._socket
+        self._socket = None
+        if socket is not None:
+            with contextlib.suppress(Exception):
+                await socket.close()
+
     async def events(self) -> AsyncIterator[dict]:
         """Yields Stasis events, reconnecting with exponential backoff.
 
@@ -306,6 +335,7 @@ class ARIClient:
                     ping_interval=_WS_PING_SECONDS,
                     ping_timeout=_WS_PING_SECONDS,
                 ) as socket:
+                    self._socket = socket
                     self.connected = True
                     delay = settings.ari_reconnect_min_seconds
                     log.info("ari.ws_connected", app=settings.ari_app)
@@ -316,9 +346,11 @@ class ARIClient:
                             log.warning("ari.ws_bad_frame")
             except asyncio.CancelledError:
                 self.connected = False
+                self._socket = None
                 raise
             except Exception as exc:
                 self.connected = False
+                self._socket = None
                 log.warning(
                     "ari.ws_disconnected", error=str(exc), retry_in=delay
                 )
@@ -326,5 +358,6 @@ class ARIClient:
                 delay = min(delay * 2, settings.ari_reconnect_max_seconds)
             else:
                 self.connected = False
+                self._socket = None
                 log.warning("ari.ws_closed", retry_in=delay)
                 await asyncio.sleep(delay)

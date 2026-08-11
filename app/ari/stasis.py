@@ -136,6 +136,7 @@ class MaskingStasisApp:
     async def run(self) -> None:
         """Consumes the ARI event stream until cancelled."""
         log.info("stasis.starting", app=self.settings.ari_app)
+        self._spawn_detached(self._registration_watchdog())
         try:
             async for event in self.client.events():
                 if self._stopping.is_set():
@@ -161,6 +162,36 @@ class MaskingStasisApp:
         for task in list(self._detached):
             task.cancel()
         await self.client.aclose()
+
+    async def _registration_watchdog(self) -> None:
+        """Reconnects when Asterisk no longer knows the application.
+
+        A second consumer of the same application name takes it over and, when
+        it leaves, Asterisk destroys the application. Our websocket stays open
+        and stops receiving anything at all, so calls would sit in Stasis until
+        they time out. Polling the application is the only way to see it.
+        """
+        while not self._stopping.is_set():
+            await asyncio.sleep(self.settings.ari_app_check_seconds)
+            if not self.client.connected:
+                continue
+            try:
+                registered = await self.client.application_registered(
+                    self.settings.ari_app
+                )
+            except ari_client.ARIError as ari_error:
+                log.warning(
+                    "stasis.registration_check_failed", error=str(ari_error)
+                )
+                continue
+            if not registered:
+                log.error("stasis.registration_lost", app=self.settings.ari_app)
+                await self.client.force_reconnect()
+
+    async def _on_application_replaced(self, event: dict) -> None:
+        """Reports that another websocket took the application over."""
+        del event
+        log.error("stasis.application_replaced", app=self.settings.ari_app)
 
     def _bind_context(self, state: CallState) -> None:
         """Restores the logging context of a call.
@@ -213,6 +244,7 @@ class MaskingStasisApp:
             "ChannelHangupRequest": self._on_hangup_request,
             "PlaybackFinished": self._on_playback_finished,
             "ChannelEnteredBridge": self._on_entered_bridge,
+            "ApplicationReplaced": self._on_application_replaced,
         }.get(event.get("type", ""))
         if handler is not None:
             await handler(event)

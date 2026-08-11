@@ -45,6 +45,7 @@ class Settings(pydantic_settings.BaseSettings):
     ari_password: str = "masking"
     ari_app: str = "masking"
     endpoint_template: str = "PJSIP/{digits}"
+    ari_app_check_seconds: float = 15.0
     ari_reconnect_min_seconds: float = 1.0
     ari_reconnect_max_seconds: float = 30.0
 
