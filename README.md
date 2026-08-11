@@ -324,6 +324,13 @@ make lint               # ruff check + format --check
 make fmt                # автоформат
 ```
 
+На каждый push в `main` и на каждый pull request
+[GitHub Actions](.github/workflows/ci.yml) прогоняет то же самое: линтер и
+формат, проверку формата голосовых подсказок, полный набор тестов против
+контейнеров PostgreSQL и Redis, накат и откат миграций, сборку образа
+управляющего приложения. Образ Asterisk в CI не собирается — компиляция из
+исходников заняла бы больше двадцати минут на каждый коммит.
+
 Код следует [Google Python Style
 Guide](https://google.github.io/styleguide/pyguide.html).
 Что из этого проверяется автоматически (`make lint`, конфигурация в

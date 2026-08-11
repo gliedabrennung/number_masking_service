@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Style and voice prompts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install
+        run: pip install -e '.[dev]'
+
+      - name: Ruff check
+        run: ruff check app tests scripts migrations
+
+      - name: Ruff format
+        run: ruff format --check app tests scripts migrations
+
+      - name: Voice prompts are telephony grade
+        run: |
+          python - <<'PY'
+          import pathlib
+          import sys
+          import wave
+
+          expected = {
+              "session-expired",
+              "number-unavailable",
+              "enter-code",
+              "wrong-code",
+              "tech-error",
+          }
+          directory = pathlib.Path("asterisk/sounds/ru/custom")
+          failures = []
+          for name in sorted(expected):
+              path = directory / f"{name}.wav"
+              if not path.exists():
+                  failures.append(f"{name}: missing")
+                  continue
+              with wave.open(str(path)) as prompt:
+                  shape = (
+                      prompt.getnchannels(),
+                      prompt.getframerate(),
+                      prompt.getsampwidth(),
+                  )
+              if shape != (1, 8000, 2):
+                  failures.append(f"{name}: {shape} is not mono 8 kHz 16 bit")
+          for failure in failures:
+              print(failure)
+          sys.exit(1 if failures else 0)
+          PY
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: masking
+          POSTGRES_PASSWORD: masking
+          POSTGRES_DB: masking
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U masking"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://masking:masking@127.0.0.1:5432/masking_test
+      REDIS_URL: redis://127.0.0.1:6379/15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install
+        run: pip install -e '.[dev]'
+
+      - name: Pytest
+        run: pytest -q
+
+      - name: Migrations apply and roll back
+        env:
+          DATABASE_URL: postgresql+asyncpg://masking:masking@127.0.0.1:5432/masking
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+  image:
+    name: Control plane image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
