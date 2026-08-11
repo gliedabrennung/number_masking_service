@@ -79,6 +79,21 @@ services:
       timeout: 5s
       retries: 3
 
+  masking-ari:
+    build: .
+    profiles: ["split"]
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    command: ["masking-ari"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+
   caddy:
     image: caddy:2-alpine
     profiles: ["tls"]

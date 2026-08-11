@@ -260,6 +260,20 @@ PIN. Тогда по `(прокси, звонящий)` находится бо�
 | `WEBHOOK_URL`, `WEBHOOK_SECRET` | вебхуки (отключены, если пусты) |
 | `RUN_ARI_IN_API` | `false` — вынести Stasis-приложение в отдельный процесс |
 
+Двухпроцессный режим поднимается профилем `split`:
+
+```bash
+sed -i 's/^RUN_ARI_IN_API=.*/RUN_ARI_IN_API=false/' .env
+docker compose up -d masking-app
+docker compose --profile split up -d masking-ari
+```
+
+API тогда обслуживает только REST (`/ready` честно показывает
+`ari_ws_connected: false`), а звонки обрабатывает `masking-ari`; журнал общий
+через PostgreSQL. Своего HTTP-эндпоинта у этого процесса нет — следить за ним
+нужно по логам или по метрике `masking_ari_ws_connected` со стороны API она не
+видна.
+
 Секреты — только через окружение или docker secrets. При старте сервис пишет
 предупреждение в лог на каждое значение по умолчанию.
 
