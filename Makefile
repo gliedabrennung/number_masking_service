@@ -106,6 +106,13 @@ check-sounds: ## Recognise the prompts back and report how intelligible they are
 	docker run --rm -v "$(CURDIR)/asterisk/sounds/ru/custom:/sounds:ro" \
 		masking-sounds-check /sounds
 
+.PHONY: api-smoke
+api-smoke: ## Run the Bruno collection against the running stand
+	docker build -t masking-api-smoke tests/api
+	set -a && . ./.env && set +a && \
+	docker run --rm --network host -v "$(CURDIR)/docs/bruno:/collection" \
+		masking-api-smoke run --env local --env-var apiKey="$$API_KEYS"
+
 .PHONY: check-leaks
 check-leaks: ## Verify that no full phone number appears in the logs
 	@scripts/check_log_leaks.sh

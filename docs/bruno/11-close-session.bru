@@ -1,0 +1,17 @@
+meta {
+  name: Close the session
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/sessions/{{sessionId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq closed
+  res.body.closed_at: isDefined
+}

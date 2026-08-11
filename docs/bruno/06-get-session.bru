@@ -1,0 +1,29 @@
+meta {
+  name: Read the session
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{sessionId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.session_id: eq {{sessionId}}
+  res.body.proxy_number: eq "{{proxyNumber}}"
+  res.body.parties[0].number_masked: contains ***
+  res.body.parties[1].number_masked: contains ***
+}
+
+tests {
+  test("no real subscriber number leaves the API", function () {
+    const body = JSON.stringify(res.getBody());
+    const partyA = bru.getVar("runPartyA").replace("+", "");
+    const partyB = bru.getVar("runPartyB").replace("+", "");
+    expect(body).to.not.contain(partyA);
+    expect(body).to.not.contain(partyB);
+  });
+}

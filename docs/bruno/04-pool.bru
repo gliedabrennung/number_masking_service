@@ -1,7 +1,7 @@
 meta {
   name: Pool state
   type: http
-  seq: 2
+  seq: 4
 }
 
 get {
@@ -10,6 +10,8 @@ get {
   auth: none
 }
 
-docs {
-  Всего / занято / в cooldown / свободно.
+assert {
+  res.status: eq 200
+  res.body.total: gte 1
+  res.body.free: gte 1
 }

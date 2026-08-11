@@ -1,0 +1,17 @@
+meta {
+  name: Journal of the session
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{sessionId}}/calls
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.total: eq 0
+  res.body.items: length 0
+}

@@ -1,0 +1,32 @@
+meta {
+  name: Add a proxy number
+  type: http
+  seq: 3
+}
+
+script:pre-request {
+  const stamp = String(Date.now());
+  bru.setVar("runProxy", "+7717" + stamp.slice(-7));
+  bru.setVar("runPartyA", "+7701" + stamp.slice(-6) + "1");
+  bru.setVar("runPartyB", "+7701" + stamp.slice(-6) + "2");
+}
+
+post {
+  url: {{baseUrl}}/numbers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "e164": "{{runProxy}}",
+    "provider": "bruno"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq enabled
+  res.body.active_sessions: eq 0
+  res.body.in_cooldown: eq false
+}

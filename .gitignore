@@ -18,13 +18,5 @@ coverage.xml
 
 .idea/
 
-# Rendered Asterisk configuration and recorded media must never be committed.
-asterisk/conf/pjsip.conf
-asterisk/conf/ari.conf
-asterisk/conf/http.conf
-asterisk/conf/extensions.conf
-*.wav.tmp
-tests/sipp/subscribers.csv
-
 # Third-party style guide kept locally, not part of the delivery.
 pyguide.md

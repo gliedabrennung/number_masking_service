@@ -1,0 +1,20 @@
+meta {
+  name: A wrong API key is refused
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/numbers
+  body: none
+  auth: none
+}
+
+headers {
+  X-API-Key: definitely-not-a-valid-key
+}
+
+assert {
+  res.status: eq 401
+  res.body.error: eq unauthorized
+}

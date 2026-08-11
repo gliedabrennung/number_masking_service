@@ -1,0 +1,35 @@
+meta {
+  name: Create a session
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/sessions
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "party_a": "{{runPartyA}}",
+    "party_b": "{{runPartyB}}",
+    "ttl_seconds": 3600,
+    "external_id": "bruno-smoke"
+  }
+}
+
+vars:post-response {
+  sessionId: res.body.session_id
+  proxyNumber: res.body.proxy_number
+  expiresAt: res.body.expires_at
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq active
+  res.body.external_id: eq bruno-smoke
+  res.body.extension_code: isNull
+  res.body.parties: length 2
+  res.body.proxy_number: isString
+}

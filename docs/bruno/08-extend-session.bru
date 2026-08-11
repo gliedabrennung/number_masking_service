@@ -1,0 +1,30 @@
+meta {
+  name: Extend the session
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/sessions/{{sessionId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "ttl_seconds": 7200
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq active
+}
+
+tests {
+  test("the expiry moved forward", function () {
+    const before = new Date(bru.getVar("expiresAt")).getTime();
+    const after = new Date(res.getBody().expires_at).getTime();
+    expect(after).to.be.above(before);
+  });
+}

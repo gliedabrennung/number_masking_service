@@ -1,0 +1,31 @@
+meta {
+  name: Metrics
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/../../metrics
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("every metric family is exposed", function () {
+    const body = res.getBody();
+    for (const family of [
+      "masking_sessions_active",
+      "masking_numbers_free",
+      "masking_calls_total",
+      "masking_call_setup_duration_seconds",
+      "masking_calls_in_flight",
+      "masking_ari_ws_connected",
+    ]) {
+      expect(body).to.contain("# TYPE " + family);
+    }
+  });
+}

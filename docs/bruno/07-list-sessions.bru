@@ -1,0 +1,29 @@
+meta {
+  name: List active sessions
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/sessions?status=active&external_id=bruno-smoke&limit=50
+  body: none
+  auth: none
+}
+
+params:query {
+  status: active
+  external_id: bruno-smoke
+  limit: 50
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("the session created by this run is listed", function () {
+    const ids = res.getBody().map((session) => session.session_id);
+    expect(ids).to.include(bru.getVar("sessionId"));
+  });
+}

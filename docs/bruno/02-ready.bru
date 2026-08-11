@@ -1,0 +1,18 @@
+meta {
+  name: Ready
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/../../ready
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.database: eq true
+  res.body.redis: eq true
+  res.body.ari: eq true
+}

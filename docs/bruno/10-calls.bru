@@ -1,0 +1,21 @@
+meta {
+  name: Journal across sessions
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/calls?limit=5
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 5
+}
+
+assert {
+  res.status: eq 200
+  res.body.limit: eq 5
+  res.body.items: isArray
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Take the number out of service
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/numbers/{{runProxy}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "status": "disabled"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.e164: eq "{{runProxy}}"
+  res.body.status: eq disabled
+}
